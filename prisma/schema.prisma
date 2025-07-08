@@ -1,32 +1,140 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mysql" // ou "sqlite" selon ton choix
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           Int    @id @default(autoincrement())
-  firstName    String @map("first_name")
-  lastName     String @map("last_name")
-  email        String @unique
-  clerkUserId  String @unique @map("clerk_user_id")
+enum Role {
+  CLIENT
+  ADMIN
+  GESTIONNAIRE
 }
 
-model Hotel {
-  id          Int     @id @default(autoincrement())
-  name        String
-  address     String
-  city        String
-  country     String
-  stars       Int?    // nombre d'étoiles, optionnel
-  description String? // description, optionnelle
+enum StatutPaiement {
+  EN_ATTENTE
+  PAYE
+  ANNULE
+}
+
+enum MoyenPaiement {
+  VISA
+  CONTACT
+  PAYPAL
+  AUTRE
+}
+
+model Utilisateur {
+  id           String       @id @default(uuid())
+  nom          String
+  email        String       @unique
+  motDePasse   String
+  role         Role         @default(CLIENT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  reservations Reservation[]
+  paiements    Paiement[]
+}
+
+model Hebergement {
+  id            String         @id @default(uuid())
+  nom           String
+  description   String
+  localisation  String
+  createdAt     DateTime       @default(now())
+
+  chambres      Chambre[]
+  videosPrivees VideoPrivee[]
+  photos        Photo[]
+}
+
+model TypeChambre {
+  id          String     @id @default(uuid())
+  nom         String
+  description String
+  prixParNuit Float
+
+  chambres    Chambre[]
+}
+
+model Chambre {
+  id             String      @id @default(uuid())
+  numero         String
+  disponible     Boolean     @default(true)
+
+  hebergementId  String
+  typeChambreId  String
+
+  hebergement    Hebergement @relation(fields: [hebergementId], references: [id])
+  typeChambre    TypeChambre @relation(fields: [typeChambreId], references: [id])
+  reservations   Reservation[]
+}
+
+model Reservation {
+  id              String      @id @default(uuid())
+  dateDebut       DateTime
+  dateFin         DateTime
+  nombrePersonnes Int
+  createdAt       DateTime    @default(now())
+
+  utilisateurId   String
+  chambreId       String
+
+  utilisateur     Utilisateur @relation(fields: [utilisateurId], references: [id])
+  chambre         Chambre     @relation(fields: [chambreId], references: [id])
+  paiement        Paiement?
+}
+
+model Paiement {
+  id             String          @id @default(uuid())
+  montant        Float
+  statut         StatutPaiement
+  moyenPaiement  MoyenPaiement
+  createdAt      DateTime        @default(now())
+
+  utilisateurId  String
+  reservationId  String          @unique
+
+  utilisateur    Utilisateur     @relation(fields: [utilisateurId], references: [id])
+  reservation    Reservation     @relation(fields: [reservationId], references: [id])
+}
+
+model VideoPrivee {
+  id            String      @id @default(uuid())
+  url           String
+  titre         String
+  privee        Boolean     @default(true)
+
+  hebergementId String
+  hebergement   Hebergement @relation(fields: [hebergementId], references: [id])
+}
+
+model Photo {
+  id            String      @id @default(uuid())
+  url           String
+
+  hebergementId String
+  hebergement   Hebergement @relation(fields: [hebergementId], references: [id])
+}
+
+model Voiture {
+  id           String   @id @default(uuid())
+  marque       String
+  modele       String
+  prixParJour  Float
+  disponible   Boolean  @default(true)
+  description  String
+  image        String
+}
+
+model Activite {
+  id              String   @id @default(uuid())
+  nom             String
+  description     String
+  prixParPersonne Float
+  localisation    String
+  image           String
 }
