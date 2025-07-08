@@ -1,3 +1,3 @@
-export default function ChambresListPage() {
-  return <div>Liste des chambres (CRUD)</div>;
+export default function ChambresPage() {
+  return <div>Page des chambres</div>;
 } 

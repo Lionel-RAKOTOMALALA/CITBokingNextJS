@@ -1,3 +1,3 @@
-export default function UtilisateursListPage() {
-  return <div>Liste des utilisateurs (CRUD)</div>;
+export default function UtilisateursPage() {
+  return <div>Page des utilisateurs</div>;
 } 

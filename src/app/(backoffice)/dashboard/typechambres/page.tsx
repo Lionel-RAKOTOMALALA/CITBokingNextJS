@@ -1,3 +1,3 @@
-export default function TypeChambresListPage() {
-  return <div>Liste des types de chambre (CRUD)</div>;
+export default function TypeChambresPage() {
+  return <div>Page des types de chambre</div>;
 } 

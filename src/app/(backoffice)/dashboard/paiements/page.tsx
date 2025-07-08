@@ -1,3 +1,3 @@
-export default function PaiementsListPage() {
-  return <div>Liste des paiements (CRUD)</div>;
+export default function PaiementsPage() {
+  return <div>Page des paiements</div>;
 } 
