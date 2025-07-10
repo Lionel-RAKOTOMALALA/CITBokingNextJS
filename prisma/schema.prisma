@@ -49,15 +49,26 @@ model Hebergement {
   chambres      Chambre[]
   videosPrivees VideoPrivee[]
   photos        Photo[]
+  typeChambres  TypeChambreHebergement[]
 }
 
 model TypeChambre {
   id          String     @id @default(uuid())
   nom         String
   description String
-  prixParNuit Float
 
   chambres    Chambre[]
+  hebergements TypeChambreHebergement[]
+}
+
+model TypeChambreHebergement {
+  id             String      @id @default(uuid())
+  hebergementId  String
+  typeChambreId  String
+  prixParNuit    Float
+
+  hebergement    Hebergement @relation(fields: [hebergementId], references: [id])
+  typeChambre    TypeChambre @relation(fields: [typeChambreId], references: [id])
 }
 
 model Chambre {

@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { baseProcedure, protectedProcedure, createTRPCRouter } from '@/trpc/init';
 import prisma from '@/db';
 import { TRPCError } from '@trpc/server';
@@ -49,7 +48,7 @@ export const userRouter = createTRPCRouter({
             const {user} = ctx;
            
             return user;
-        } catch (error) {
+        } catch {
             throw new TRPCError({
                 code: "INTERNAL_SERVER_ERROR",
                 message: "An unexpected error occurred",

@@ -23,7 +23,7 @@ export const homeRouter = createTRPCRouter({
                 },
             });
             return updatedUser;
-        } catch (error) {
+        } catch {
             throw new TRPCError({
                 code: "INTERNAL_SERVER_ERROR",
                 message: "An unexpected error occurred",

@@ -1,3 +1,4 @@
+
 @import "tailwindcss";
 
 :root {
@@ -17,6 +18,11 @@
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -40,4 +46,10 @@ body {
 
 .cl-internal-tdwgmn {
   display: none !important;
+}
+.cl-internal-e41776{
+  display: none;
+}
+.cl-internal-df7v37{
+  display: none;
 }

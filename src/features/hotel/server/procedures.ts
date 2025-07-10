@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { baseProcedure, createTRPCRouter } from '@/trpc/init';
 import prisma from '@/db';
 import { hotelSchema, hotelUpdateSchema, hotelIdSchema } from '@/schemas/hotel';
