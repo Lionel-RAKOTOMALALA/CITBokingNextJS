@@ -4,6 +4,7 @@ import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
 import Topbar from "./Topbar";
 import GlobalLoader from "@/components/GlobalLoader";
+import ClientShell from "./ClientShell";
 
 export const metadata: Metadata = {
   title: "Centre Touristique - Système de gestion",
@@ -20,9 +21,9 @@ export default function RootLayout({
       <TRPCProvider>
         <html lang="fr">
           <body className="font-sans antialiased bg-slate-900">
-            <Topbar />
-            <GlobalLoader />
-            {children}
+            <ClientShell>
+              {children}
+            </ClientShell>
           </body>
         </html>
       </TRPCProvider>

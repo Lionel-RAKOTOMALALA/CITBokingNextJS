@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['images.unsplash.com', 'via.placeholder.com'],
+    domains: [
+      "mcdn.wallpapersafari.com",
+      // ajoute d'autres domaines ici si besoin
+    ],
   },
 };
 

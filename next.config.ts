@@ -1,7 +1,11 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: [
+      "mcdn.wallpapersafari.com",
+      // ajoute d'autres domaines ici si besoin
+    ],
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig; 

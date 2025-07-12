@@ -4,6 +4,7 @@ import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import { trpc } from "@/trpc/client";
 import Image from "next/image";
 import { PrismaVoiture } from "@/types/schemas";
+import AddCarModal from "@/components/voitures/AddCarModal";
 
 // Fonction pour valider une URL d'image
 const isValidImageUrl = (url: string): boolean => {
@@ -26,7 +27,12 @@ const getValidImageUrl = (imageUrl: string): string => {
 };
 
 export default function VoituresSection() {
-  const { data: voitures, isLoading } = trpc.voiture.list.useQuery();
+  const { data: voitures, isLoading, refetch } = trpc.voiture.list.useQuery();
+
+  const handleCarAdded = () => {
+    // Rafraîchir la liste des voitures après l'ajout
+    refetch();
+  };
 
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
@@ -36,10 +42,7 @@ export default function VoituresSection() {
           <div className="text-gray-400 text-xs mb-1">Voitures • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des voitures</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddCarModal onCarAdded={handleCarAdded} />
       </div>
 
       {/* Search Bar */}
