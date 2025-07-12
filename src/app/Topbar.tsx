@@ -13,7 +13,7 @@ export default function Topbar() {
         {/* Logo et titre */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 relative">
+            <div className="w-14 h-14 relative">
               <Image src="/images/logo.png" alt="Centre d'Information Touristique" fill className="object-contain" />
             </div>
             <div className="hidden sm:block">

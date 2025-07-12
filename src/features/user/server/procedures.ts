@@ -20,7 +20,7 @@ export const userRouter = createTRPCRouter({
       }
 
 
-      const user = await prisma.user.findUnique({
+      const user = await prisma.utilisateur.findUnique({
         where: {
           clerkUserId,
         },
@@ -28,12 +28,12 @@ export const userRouter = createTRPCRouter({
 
       const clerkUser = await currentUser();
       if (!user) {
-        const newUser = await prisma.user.create({
+        const newUser = await prisma.utilisateur.create({
           data: {
-              lastName: clerkUser?.lastName || "RAKOTOMALALA",
-              firstName: clerkUser?.firstName || "Lionel",
-              email: clerkUser?.emailAddresses[0].emailAddress || "rakotomalalalionel32@gmail.com",
-              clerkUserId,
+            nom: ((clerkUser?.lastName || "RAKOTOMALALA") + " " + (clerkUser?.firstName || "Lionel")).trim(),
+            email: clerkUser?.emailAddresses[0].emailAddress || "rakotomalalalionel32@gmail.com",
+            motDePasse: "changeme",
+            clerkUserId,
           },
         });
 

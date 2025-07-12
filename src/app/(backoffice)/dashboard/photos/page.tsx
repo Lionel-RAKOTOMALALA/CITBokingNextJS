@@ -1,4 +1,5 @@
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import Image from "next/image";
 
 const photos = [
   {
@@ -80,9 +81,11 @@ export default function PhotosSection() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="w-16 h-10 rounded overflow-hidden border border-gray-600">
-                      <img
+                      <Image
                         src={p.url || "/placeholder.svg"}
                         alt={p.description}
+                        width={48}
+                        height={32}
                         className="w-full h-full object-cover"
                       />
                     </div>

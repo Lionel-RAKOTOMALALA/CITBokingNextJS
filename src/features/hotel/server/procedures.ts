@@ -7,20 +7,20 @@ export const hotelRouter = createTRPCRouter({
   create: baseProcedure
     .input(hotelSchema)
     .mutation(async ({ input }) => {
-      return prisma.hotel.create({ data: input });
+      return prisma.hebergement.create({ data: input });
     }),
 
   // Lister tous les hôtels
   list: baseProcedure
     .query(async () => {
-      return prisma.hotel.findMany();
+      return prisma.hebergement.findMany();
     }),
 
   // Récupérer un hôtel par ID
   get: baseProcedure
     .input(hotelIdSchema)
     .query(async ({ input }) => {
-      return prisma.hotel.findUnique({ where: { id: input.id } });
+      return prisma.hebergement.findUnique({ where: { id: input.id } });
     }),
 
   // Mettre à jour un hôtel
@@ -28,13 +28,13 @@ export const hotelRouter = createTRPCRouter({
     .input(hotelUpdateSchema)
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      return prisma.hotel.update({ where: { id }, data });
+      return prisma.hebergement.update({ where: { id }, data });
     }),
 
   // Supprimer un hôtel
   delete: baseProcedure
     .input(hotelIdSchema)
     .mutation(async ({ input }) => {
-      return prisma.hotel.delete({ where: { id: input.id } });
+      return prisma.hebergement.delete({ where: { id: input.id } });
     }),
 }); 

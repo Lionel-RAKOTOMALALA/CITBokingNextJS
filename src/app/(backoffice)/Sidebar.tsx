@@ -14,11 +14,6 @@ import {
   MapPin,
   Users,
   ChevronRight,
-  Settings,
-  BarChart3,
-  FileText,
-  Bell,
-  Shield,
 } from "lucide-react"
 
 const menu = [
@@ -126,7 +121,7 @@ export default function Sidebar() {
               <span className="text-white font-bold text-lg">🏨</span>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Dashboard</h2>
+              <h2 className="text-sm font-bold text-white">Tableau de bord</h2>
               <p className="text-xs text-slate-400">Centre Touristique</p>
             </div>
           </div>

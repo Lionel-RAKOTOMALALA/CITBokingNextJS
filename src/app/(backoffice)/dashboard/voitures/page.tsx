@@ -1,36 +1,33 @@
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa"
+'use client';
 
-const voitures = [
-  {
-    id: 1,
-    marque: "Toyota",
-    modele: "Corolla",
-    prixParJour: 45,
-    disponible: true,
-    description: "Berline confortable, idéale pour la ville.",
-    image: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-  },
-  {
-    id: 2,
-    marque: "Peugeot",
-    modele: "208",
-    prixParJour: 38,
-    disponible: false,
-    description: "Compacte économique, parfaite pour les petits trajets.",
-    image: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-  },
-  {
-    id: 3,
-    marque: "Renault",
-    modele: "Clio",
-    prixParJour: 42,
-    disponible: true,
-    description: "Citadine moderne avec équipements de série.",
-    image: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-  },
-]
+import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { trpc } from "@/trpc/client";
+import Image from "next/image";
+import { PrismaVoiture } from "@/types/schemas";
+
+// Fonction pour valider une URL d'image
+const isValidImageUrl = (url: string): boolean => {
+  if (!url) return false;
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Fonction pour obtenir une image par défaut valide
+const getValidImageUrl = (imageUrl: string): string => {
+  if (isValidImageUrl(imageUrl)) {
+    return imageUrl;
+  }
+  // Image par défaut valide
+  return "https://via.placeholder.com/48x32/374151/FFFFFF?text=Car";
+};
 
 export default function VoituresSection() {
+  const { data: voitures, isLoading } = trpc.voiture.list.useQuery();
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -60,35 +57,25 @@ export default function VoituresSection() {
       {/* Table */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="p-6 text-center text-gray-400">Chargement...</div>
+          ) : (
           <table className="min-w-full">
             <thead>
               <tr className="bg-gradient-to-r from-gray-700 to-gray-750 border-b border-gray-600">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Id</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Image
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Marque
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Modèle
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Prix/Jour
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Disponible
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Image</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Marque</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Modèle</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Prix/Jour</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Disponible</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Description</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {voitures.map((v, index) => (
+                {voitures && voitures.length > 0 ? (
+                  voitures.map((v: PrismaVoiture, index: number) => (
                 <tr
                   key={v.id}
                   className={`hover:bg-gray-750 transition-colors duration-150 ${
@@ -97,14 +84,16 @@ export default function VoituresSection() {
                 >
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {v.id}
+                          {v.id.slice(0, 4)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="w-12 h-8 rounded overflow-hidden border border-gray-600">
-                      <img
-                        src={v.image || "/placeholder.svg"}
+                          <Image
+                        src={getValidImageUrl(v.image)}
                         alt={`${v.marque} ${v.modele}`}
+                            width={48}
+                            height={32}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -150,16 +139,24 @@ export default function VoituresSection() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="p-6 text-center text-gray-400">
+                      Aucune voiture trouvée.
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {voitures.length} véhicule{voitures.length > 1 ? "s" : ""} au total
+          {voitures && voitures.length} véhicule{voitures && voitures.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -168,5 +165,5 @@ export default function VoituresSection() {
         </div>
       </div>
     </div>
-  )
+  );
 }

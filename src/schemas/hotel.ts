@@ -2,20 +2,15 @@
 import { z } from "zod";
 
 export const hotelSchema = z.object({
-  name: z.string().min(1, "Le nom de l'hôtel est requis"),
-  address: z.string().min(1, "L'adresse est requise"),
-  city: z.string().min(1, "La ville est requise"),
-  country: z.string().min(1, "Le pays est requis"),
-  stars: z.number().int().min(1).max(5).optional(),
-  description: z.string().optional(),
+  nom: z.string().min(1, "Le nom est requis"),
+  description: z.string(),
+  localisation: z.string().min(1, "La localisation est requise"),
 });
 
 export const hotelUpdateSchema = hotelSchema.extend({
-  id: z.number(),
+  id: z.string().uuid(),
 });
 
 export const hotelIdSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
 });
-
-export type Hotel = z.infer<typeof hotelSchema>;

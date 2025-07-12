@@ -104,7 +104,7 @@ export default function SignUpPage() {
             className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour à l'accueil
+            Retour à l&apos;accueil
           </Link>
         </div>
       </div>

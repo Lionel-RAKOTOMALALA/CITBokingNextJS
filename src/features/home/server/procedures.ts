@@ -6,20 +6,19 @@ import { TRPCError } from '@trpc/server';
 export const homeRouter = createTRPCRouter({
   updateUser: protectedProcedure
     .input(z.object({
-      lastName: z.string(),
-      firstName: z.string(),
+      nom: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
         try {
             const {user} = ctx;
-            const {lastName, firstName} = input;
+            const { nom } = input;
            
-            const updatedUser = await prisma.user.update({
+            const updatedUser = await prisma.utilisateur.update({
                 where: {
                     id: user.id,
                 },
                 data: {
-                    lastName, firstName,
+                    nom,
                 },
             });
             return updatedUser;

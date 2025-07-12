@@ -34,6 +34,7 @@ model Utilisateur {
   role         Role         @default(CLIENT)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  clerkUserId  String?      @unique
 
   reservations Reservation[]
   paiements    Paiement[]

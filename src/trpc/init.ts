@@ -36,7 +36,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     });
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.utilisateur.findFirst({
     where: {
       clerkUserId: ctx.clerkUserId,
     },
