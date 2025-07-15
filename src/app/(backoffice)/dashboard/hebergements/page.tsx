@@ -1,30 +1,31 @@
+'use client';
+import { trpc } from "@/trpc/client";
+import AddHebergementModal from "@/components/hebergements/AddHebergementModal";
+import EditHebergementModal from "@/components/hebergements/EditHebergementModal";
+import { useState } from "react";
+import Modal from "@/components/ui/modal";
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-
-const hebergements = [
-  {
-    id: 1,
-    nom: "Hôtel du Parc",
-    description: "Hôtel 4 étoiles avec piscine et spa.",
-    localisation: "Paris, France",
-    createdAt: "2024-01-10",
-  },
-  {
-    id: 2,
-    nom: "Auberge de la Plage",
-    description: "Auberge conviviale en bord de mer.",
-    localisation: "Nice, France",
-    createdAt: "2023-11-05",
-  },
-  {
-    id: 3,
-    nom: "Chalet Montagne",
-    description: "Chalet tout équipé au pied des pistes.",
-    localisation: "Chamonix, France",
-    createdAt: "2024-02-20",
-  },
-];
+import { PrismaHebergement } from "@/types/schemas";
 
 export default function HebergementsSection() {
+  const { data: hebergements, isLoading, refetch } = trpc.hebergement.list.useQuery();
+  const [editId, setEditId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteHebergement = trpc.hebergement.delete.useMutation();
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteError(null);
+    try {
+      await deleteHebergement.mutateAsync({ id: deleteId });
+      setDeleteId(null);
+      refetch();
+    } catch (e: any) {
+      setDeleteError(e?.message || "Erreur lors de la suppression.");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -33,10 +34,7 @@ export default function HebergementsSection() {
           <div className="text-gray-400 text-xs mb-1">Hébergements • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des hébergements</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddHebergementModal onHebergementAdded={refetch} />
       </div>
 
       {/* Search Bar */}
@@ -54,6 +52,9 @@ export default function HebergementsSection() {
       {/* Table */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="p-6 text-center text-gray-400">Chargement...</div>
+          ) : (
           <table className="min-w-full">
             <thead>
               <tr className="bg-gradient-to-r from-gray-700 to-gray-750 border-b border-gray-600">
@@ -61,58 +62,78 @@ export default function HebergementsSection() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Nom</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Description</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Localisation</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Créé le</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {hebergements.map((h, index) => (
-                <tr
-                  key={h.id}
-                  className={`hover:bg-gray-750 transition-colors duration-150 ${
-                    index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {h.id}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-white">{h.nom}</span>
-                  </td>
-                  <td className="px-4 py-3 max-w-xs">
-                    <p className="text-xs text-gray-400 truncate" title={h.description}>
-                      {h.description}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-gray-300">{h.localisation}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{h.createdAt}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaEdit className="text-xs" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaTrash className="text-xs" />
-                      </button>
-                    </div>
+              {hebergements && hebergements.length > 0 ? (
+                (hebergements as PrismaHebergement[]).map((h: PrismaHebergement, index: number) => (
+                  <tr
+                    key={h.id}
+                    className={`hover:bg-gray-750 transition-colors duration-150 ${
+                      index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
+                        {h.id.slice(0, 4)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-white">{h.nom}</span>
+                    </td>
+                    <td className="px-4 py-3 max-w-xs">
+                      <p className="text-xs text-gray-400 truncate" title={h.description}>
+                        {h.description}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-300">{h.localisation}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          aria-label="Modifier"
+                          className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150"
+                          type="button"
+                          onClick={() => setEditId(h.id)}
+                        >
+                          <FaEdit className="text-xs" />
+                        </button>
+                        <EditHebergementModal
+                          hebergementId={h.id}
+                          open={editId === h.id}
+                          onOpenChange={open => setEditId(open ? h.id : null)}
+                          onHebergementUpdated={refetch}
+                        />
+                        <button
+                          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                          onClick={() => setDeleteId(h.id)}
+                          disabled={deleteHebergement.status === 'loading' && deleteId === h.id}
+                        >
+                          <FaTrash className="text-xs" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="p-6 text-center text-gray-400">
+                    Aucun hébergement trouvé.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
+          )}
         </div>
       </div>
 
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {hebergements.length} hébergement{hebergements.length > 1 ? "s" : ""} au total
+          {hebergements && hebergements.length} hébergement{hebergements && hebergements.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -120,6 +141,36 @@ export default function HebergementsSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <Modal open={!!deleteId} onClose={() => setDeleteId(null)}>
+        <div className="p-8 flex flex-col items-center">
+          <div className="mb-4 text-2xl text-red-500">
+            <FaTrash className="inline mr-2" />
+            Confirmer la suppression
+          </div>
+          <div className="text-slate-300 mb-6 text-center">
+            Êtes-vous sûr de vouloir supprimer cet hébergement ? Cette action est <b>irréversible</b>.
+          </div>
+          {deleteError && <div className="text-red-400 mb-2">{deleteError}</div>}
+          <div className="flex gap-4 mt-2">
+            <button
+              className="px-4 py-2 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition"
+              onClick={() => setDeleteId(null)}
+              disabled={deleteHebergement.status === 'loading'}
+            >
+              Annuler
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition font-semibold"
+              onClick={handleDelete}
+              disabled={deleteHebergement.status === 'loading'}
+            >
+              {deleteHebergement.status === 'loading' ? "Suppression..." : "Supprimer"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 } 

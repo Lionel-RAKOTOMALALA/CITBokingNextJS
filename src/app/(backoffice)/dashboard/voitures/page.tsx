@@ -5,6 +5,9 @@ import { trpc } from "@/trpc/client";
 import Image from "next/image";
 import { PrismaVoiture } from "@/types/schemas";
 import AddCarModal from "@/components/voitures/AddCarModal";
+import EditCarModal from "@/components/voitures/EditCarModal";
+import { useState } from "react";
+import Modal from "@/components/ui/modal";
 
 // Fonction pour valider une URL d'image
 const isValidImageUrl = (url: string): boolean => {
@@ -28,10 +31,26 @@ const getValidImageUrl = (imageUrl: string): string => {
 
 export default function VoituresSection() {
   const { data: voitures, isLoading, refetch } = trpc.voiture.list.useQuery();
+  const [editCarId, setEditCarId] = useState<string | null>(null);
+  const [deleteCarId, setDeleteCarId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteVoiture = trpc.voiture.delete.useMutation();
 
   const handleCarAdded = () => {
     // Rafraîchir la liste des voitures après l'ajout
     refetch();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteCarId) return;
+    setDeleteError(null);
+    try {
+      await deleteVoiture.mutateAsync({ id: deleteCarId });
+      setDeleteCarId(null);
+      refetch();
+    } catch (e: any) {
+      setDeleteError(e?.message || "Erreur lors de la suppression.");
+    }
   };
 
   return (
@@ -133,10 +152,24 @@ export default function VoituresSection() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <button
+                        aria-label="Modifier"
+                        className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        type="button"
+                        onClick={() => setEditCarId(v.id)}
+                      >
                         <FaEdit className="text-xs" />
                       </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <EditCarModal
+                        carId={v.id}
+                        open={editCarId === v.id}
+                        onOpenChange={(open) => setEditCarId(open ? v.id : null)}
+                        onCarUpdated={() => { setEditCarId(null); refetch(); }}
+                      />
+                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        onClick={() => setDeleteCarId(v.id)}
+                        disabled={deleteVoiture.isLoading && deleteCarId === v.id}
+                      >
                         <FaTrash className="text-xs" />
                       </button>
                     </div>
@@ -167,6 +200,36 @@ export default function VoituresSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <Modal open={!!deleteCarId} onClose={() => setDeleteCarId(null)}>
+        <div className="p-8 flex flex-col items-center">
+          <div className="mb-4 text-2xl text-red-500">
+            <FaTrash className="inline mr-2" />
+            Confirmer la suppression
+          </div>
+          <div className="text-slate-300 mb-6 text-center">
+            Êtes-vous sûr de vouloir supprimer ce véhicule ? Cette action est <b>irréversible</b>.
+          </div>
+          {deleteError && <div className="text-red-400 mb-2">{deleteError}</div>}
+          <div className="flex gap-4 mt-2">
+            <button
+              className="px-4 py-2 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition"
+              onClick={() => setDeleteCarId(null)}
+              disabled={deleteVoiture.isLoading}
+            >
+              Annuler
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition font-semibold"
+              onClick={handleDelete}
+              disabled={deleteVoiture.isLoading}
+            >
+              {deleteVoiture.isLoading ? "Suppression..." : "Supprimer"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -6,11 +6,11 @@ import { userSchema } from "@/schemas/user";
 import { hotelSchema, hotelUpdateSchema, hotelIdSchema } from "@/schemas/hotel";
 import { reservationSchema } from "@/schemas/reservation";
 import { chambreSchema } from "@/schemas/chambre";
-import { activiteSchema } from "@/schemas/activite";
+import { activiteSchema, activiteUpdateSchema, activiteIdSchema } from "@/schemas/activite";
 import { typeChambreSchema } from "@/schemas/typeChambre";
 import { videoPriveeSchema } from "@/schemas/videoPrivee";
 import { photoSchema } from "@/schemas/photo";
-import { paiementSchema } from "@/schemas/paiement";
+import { paiementSchema, paiementUpdateSchema, paiementIdSchema } from "@/schemas/paiement";
 
 // ===== TYPES VOITURE =====
 export type Voiture = z.infer<typeof voitureSchema>;
@@ -37,6 +37,8 @@ export type Chambre = z.infer<typeof chambreSchema>;
 
 // ===== TYPES ACTIVITE =====
 export type Activite = z.infer<typeof activiteSchema>;
+export type ActiviteUpdate = z.infer<typeof activiteUpdateSchema>;
+export type ActiviteId = z.infer<typeof activiteIdSchema>;
 
 // ===== TYPES TYPE CHAMBRE =====
 export type TypeChambre = z.infer<typeof typeChambreSchema>;
@@ -49,6 +51,8 @@ export type Photo = z.infer<typeof photoSchema>;
 
 // ===== TYPES PAIEMENT =====
 export type Paiement = z.infer<typeof paiementSchema>;
+export type PaiementUpdate = z.infer<typeof paiementUpdateSchema>;
+export type PaiementId = z.infer<typeof paiementIdSchema>;
 
 // ===== TYPES PRISMA (pour les retours de base de données) =====
 // Ces types incluent les champs générés par Prisma (id, createdAt, etc.)

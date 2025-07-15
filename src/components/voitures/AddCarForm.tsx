@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { voitureSchema } from "@/lib/validation/voitureSchema";
@@ -14,12 +14,34 @@ import { Car, Check, X, ImageIcon, DollarSign, Eye, EyeOff } from "lucide-react"
 interface AddCarFormProps {
   onSubmit: (data: VoitureFormData) => Promise<void>;
   onCancel: () => void;
+  initialValues?: Partial<VoitureFormData>;
+  submitLabel?: string;
 }
 
-export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
+// Ajout d'un utilitaire pour valider l'URL d'image
+function isValidImageUrl(url: string): boolean {
+  if (!url) return false;
+  try {
+    new URL(url);
+    return /\.(jpe?g|png|webp|gif)$/i.test(url);
+  } catch {
+    return false;
+  }
+}
+
+export default function AddCarForm({ onSubmit, onCancel, initialValues, submitLabel = "Ajouter" }: AddCarFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Correction : initialiser la preview d'image si on édite
+  useEffect(() => {
+    if (initialValues?.image && isValidImageUrl(initialValues.image)) {
+      setImagePreview(initialValues.image);
+      setShowImagePreview(true);
+    }
+  }, [initialValues?.image]);
 
   const {
     register,
@@ -30,7 +52,7 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
     formState: { errors, isValid, touchedFields, dirtyFields },
   } = useForm<VoitureFormData>({
     resolver: zodResolver(voitureSchema),
-    defaultValues: {
+    defaultValues: initialValues || {
       marque: "",
       modele: "",
       prixParJour: undefined,
@@ -43,8 +65,13 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
     shouldUnregister: false,
   });
 
-  // Correction: use dirtyFields for progression, not just raw values
   const watchedFields = watch();
+  // Supprimer tous les useEffect liés à initialValues.image ou watchedFields.image
+  // Laisser uniquement la logique d'origine :
+  // - setImagePreview/setShowImagePreview dans handleFileChange, handleImageUrlChange, handleClose
+  // - reset efface l'aperçu
+
+  // Correction: use dirtyFields for progression, not just raw values
   const progressionFields = [
     "marque",
     "modele",
@@ -55,7 +82,7 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
   // Compte uniquement les champs obligatoires remplis ET valides
   const filledCount = progressionFields.reduce((acc, key) => {
     if (
-      (key === "marque" || key === "modele" || key === "image") &&
+      (key === "marque" || key === "modele") &&
       typeof watchedFields[key] === "string" &&
       watchedFields[key].trim() !== "" &&
       !errors[key]
@@ -67,6 +94,16 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
       typeof watchedFields[key] === "number" &&
       watchedFields[key] !== null &&
       watchedFields[key] !== undefined &&
+      !errors[key]
+    ) {
+      return acc + 1;
+    }
+    if (
+      key === "image" &&
+      typeof watchedFields[key] === "string" &&
+      watchedFields[key].startsWith("https://") &&
+      watchedFields[key].includes("vercel-storage.com") &&
+      /\.(jpe?g|png|webp|gif)$/i.test(watchedFields[key]) &&
       !errors[key]
     ) {
       return acc + 1;
@@ -94,6 +131,33 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
     }
   };
 
+  // Fonction d'upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      alert("Erreur lors de l’upload de l’image. (Réponse invalide)");
+      return;
+    }
+    if (data.url) {
+      setValue("image", data.url, { shouldValidate: true });
+      setImagePreview(data.url);
+      setShowImagePreview(true);
+    } else {
+      alert(data.error || "Erreur lors de l’upload de l’image.");
+    }
+  };
+
   const handleFormSubmit = async (data: VoitureFormData) => {
     setIsSubmitting(true);
     try {
@@ -107,8 +171,9 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
     }
   };
 
+  // Dans handleClose, effacer l'aperçu et faire reset
   const handleClose = () => {
-    reset();
+    reset(initialValues || undefined);
     setImagePreview("");
     setShowImagePreview(false);
     onCancel();
@@ -268,53 +333,19 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
         {/* Image */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-purple-400" />
-            URL de l'image *
-            {touchedFields.image && !errors.image && <Check className="w-4 h-4 text-green-400" />}
+            Image du véhicule *
           </label>
-          <div className="relative">
-            <Input
-              {...register("image")}
-              placeholder="https://example.com/image.jpg"
-              onChange={(e) => handleImageUrlChange(e.target.value)}
-              className={`text-sm h-10 px-3 ${
-                errors.image
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                  : touchedFields.image && !errors.image
-                  ? "border-green-500 focus:border-green-500 focus:ring-green-500"
-                  : ""
-              }`}
-            />
-            {imagePreview && (
-              <button
-                type="button"
-                onClick={() => setShowImagePreview(!showImagePreview)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-              >
-                {showImagePreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            )}
-          </div>
-          {errors.image && (
-            <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
-              <X className="w-3 h-3" />
-              {errors.image.message}
-            </p>
-          )}
-          {touchedFields.image && !errors.image && !watchedFields.image && (
-            <p className="text-orange-400 text-xs mt-1">Ce champ est requis.</p>
-          )}
-
-          {/* Prévisualisation compacte */}
-          {imagePreview && showImagePreview && (
-            <div className="relative w-full h-24 bg-slate-700 rounded-lg overflow-hidden border border-slate-600">
-              <img src={imagePreview || "/placeholder.svg"} alt="Prévisualisation" className="w-full h-full object-cover" />
-              <div className="absolute top-2 right-2">
-                <Badge variant="success" className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
-                  <Check className="w-3 h-3 mr-1" />
-                  Valide
-                </Badge>
-              </div>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="block w-full text-sm text-slate-200"
+          />
+          {/* Affichage de la prévisualisation si imagePreview existe */}
+          {imagePreview && (
+            <div className="relative w-full h-24 bg-slate-700 rounded-lg overflow-hidden border border-slate-600 mt-2">
+              <img src={imagePreview} alt="Prévisualisation" className="w-full h-full object-cover" />
             </div>
           )}
         </div>
@@ -364,12 +395,12 @@ export default function AddCarForm({ onSubmit, onCancel }: AddCarFormProps) {
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <Loading size="sm" />
-                Ajout...
+                {submitLabel}...
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4" />
-                Ajouter
+                {submitLabel}
               </div>
             )}
           </Button>

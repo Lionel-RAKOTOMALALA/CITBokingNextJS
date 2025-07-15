@@ -57,7 +57,7 @@ model TypeChambre {
   id          String     @id @default(uuid())
   nom         String
   description String
-
+  capaciteMax Int
   chambres    Chambre[]
   hebergements TypeChambreHebergement[]
 }
@@ -122,6 +122,7 @@ model VideoPrivee {
 
   hebergementId String
   hebergement   Hebergement @relation(fields: [hebergementId], references: [id])
+  createdAt     DateTime    @default(now())
 }
 
 model Photo {
@@ -130,6 +131,7 @@ model Photo {
 
   hebergementId String
   hebergement   Hebergement @relation(fields: [hebergementId], references: [id])
+  createdAt     DateTime    @default(now())
 }
 
 model Voiture {

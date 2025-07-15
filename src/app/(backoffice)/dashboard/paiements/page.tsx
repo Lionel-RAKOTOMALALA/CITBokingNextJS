@@ -1,33 +1,63 @@
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-
-const paiements = [
-  {
-    id: 1,
-    utilisateur: "Jean Dupont",
-    montant: 225,
-    statut: "Payé",
-    moyen: "VISA",
-    date: "2024-07-10",
-  },
-  {
-    id: 2,
-    utilisateur: "Marie Martin",
-    montant: 90,
-    statut: "En attente",
-    moyen: "PAYPAL",
-    date: "2024-08-01",
-  },
-  {
-    id: 3,
-    utilisateur: "Paul Durand",
-    montant: 84,
-    statut: "Annulé",
-    moyen: "CONTACT",
-    date: "2024-07-20",
-  },
-];
+"use client";
+import { useState } from "react";
+import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import { trpc } from "@/trpc/client";
+import AddPaiementModal from "@/components/paiements/AddPaiementModal";
+import EditPaiementModal from "@/components/paiements/EditPaiementModal";
+import DeletePaiementModal from "@/components/paiements/DeletePaiementModal";
+import { Loading } from "@/components/ui/loading";
 
 export default function PaiementsSection() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingPaiementId, setEditingPaiementId] = useState<string | null>(null);
+  const [deletingPaiementId, setDeletingPaiementId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+
+  // Récupération des paiements
+  const { data: paiements = [], isLoading, error } = trpc.paiement.list.useQuery();
+
+  // Filtrage côté client
+  const filteredPaiements = paiements.filter((p) => {
+    const utilisateur = p.utilisateur?.nom || "";
+    const statut = p.statut || "";
+    const moyen = p.moyenPaiement || "";
+    return (
+      utilisateur.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      statut.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      moyen.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  // Callback pour rafraîchir la liste après ajout
+  const handlePaiementAdded = () => {
+    utils.paiement.list.invalidate();
+  };
+
+  const handlePaiementUpdated = () => {
+    utils.paiement.list.invalidate();
+  };
+  const handlePaiementDeleted = () => {
+    utils.paiement.list.invalidate();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-gray-900 min-h-screen flex items-center justify-center">
+        <Loading size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-900 min-h-screen">
+        <div className="text-red-400 text-center">
+          Erreur lors du chargement des paiements: {error.message}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -36,10 +66,7 @@ export default function PaiementsSection() {
           <div className="text-gray-400 text-xs mb-1">Paiements • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des paiements</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddPaiementModal onPaiementAdded={handlePaiementAdded} />
       </div>
 
       {/* Search Bar */}
@@ -49,6 +76,8 @@ export default function PaiementsSection() {
           <input
             type="text"
             placeholder="Recherche..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-gray-200 placeholder-gray-400 text-sm"
           />
         </div>
@@ -70,7 +99,7 @@ export default function PaiementsSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {paiements.map((p, index) => (
+              {filteredPaiements.map((p, index) => (
                 <tr
                   key={p.id}
                   className={`hover:bg-gray-750 transition-colors duration-150 ${
@@ -79,22 +108,22 @@ export default function PaiementsSection() {
                 >
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {p.id}
+                      {p.id.slice(0, 2)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-white">{p.utilisateur}</span>
+                    <span className="text-sm font-medium text-white">{p.utilisateur?.nom || "-"}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className="text-sm font-semibold text-green-400">{p.montant} €</span>
                   </td>
                   <td className="px-4 py-3">
-                    {p.statut === "Payé" ? (
+                    {p.statut === "PAYE" ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-900 text-green-300 border border-green-800">
                         <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
                         Payé
                       </span>
-                    ) : p.statut === "En attente" ? (
+                    ) : p.statut === "EN_ATTENTE" ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-yellow-900 text-yellow-300 border border-yellow-800">
                         <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
                         En attente
@@ -107,17 +136,23 @@ export default function PaiementsSection() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-gray-300">{p.moyen}</span>
+                    <span className="text-sm text-gray-300">{p.moyenPaiement}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{p.date}</span>
+                    <span className="text-xs text-gray-400">{new Date(p.createdAt).toLocaleDateString('fr-FR')}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        onClick={() => setEditingPaiementId(p.id)}
+                        title="Éditer"
+                      >
                         <FaEdit className="text-xs" />
                       </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        onClick={() => setDeletingPaiementId(p.id)}
+                        title="Supprimer"
+                      >
                         <FaTrash className="text-xs" />
                       </button>
                     </div>
@@ -132,7 +167,7 @@ export default function PaiementsSection() {
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {paiements.length} paiement{paiements.length > 1 ? "s" : ""} au total
+          {filteredPaiements.length} paiement{filteredPaiements.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -140,6 +175,25 @@ export default function PaiementsSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal d'édition */}
+      {editingPaiementId && (
+        <EditPaiementModal
+          paiementId={editingPaiementId}
+          open={!!editingPaiementId}
+          onOpenChange={(open) => !open && setEditingPaiementId(null)}
+          onPaiementUpdated={handlePaiementUpdated}
+        />
+      )}
+      {/* Modal de suppression */}
+      {deletingPaiementId && (
+        <DeletePaiementModal
+          paiementId={deletingPaiementId}
+          open={!!deletingPaiementId}
+          onOpenChange={(open) => !open && setDeletingPaiementId(null)}
+          onPaiementDeleted={handlePaiementDeleted}
+        />
+      )}
     </div>
   );
 } 

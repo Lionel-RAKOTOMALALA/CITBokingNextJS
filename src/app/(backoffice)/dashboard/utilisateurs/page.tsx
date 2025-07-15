@@ -1,30 +1,59 @@
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-
-const utilisateurs = [
-  {
-    id: 1,
-    nom: "Jean Dupont",
-    email: "jean.dupont@email.com",
-    role: "ADMIN",
-    createdAt: "2024-07-01",
-  },
-  {
-    id: 2,
-    nom: "Marie Martin",
-    email: "marie.martin@email.com",
-    role: "CLIENT",
-    createdAt: "2024-06-15",
-  },
-  {
-    id: 3,
-    nom: "Paul Durand",
-    email: "paul.durand@email.com",
-    role: "GESTIONNAIRE",
-    createdAt: "2024-05-20",
-  },
-];
+"use client";
+import { useState } from "react";
+import { FaEdit, FaTrash, FaSearch, FaUser } from "react-icons/fa";
+import { trpc } from "@/trpc/client";
+import AddUtilisateurModal from "@/components/utilisateurs/AddUtilisateurModal";
+import EditUtilisateurModal from "@/components/utilisateurs/EditUtilisateurModal";
+import DeleteUtilisateurModal from "@/components/utilisateurs/DeleteUtilisateurModal";
+import { Loading } from "@/components/ui/loading";
 
 export default function UtilisateursSection() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingUtilisateurId, setEditingUtilisateurId] = useState<string | null>(null);
+  const [deletingUtilisateurId, setDeletingUtilisateurId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+
+  // Récupération des utilisateurs
+  const { data: utilisateurs = [], isLoading, error } = trpc.user.list.useQuery();
+
+  // Filtrage côté client
+  const filteredUtilisateurs = utilisateurs.filter((utilisateur) =>
+    utilisateur.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    utilisateur.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    utilisateur.role?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Callbacks pour rafraîchir la liste
+  const handleUtilisateurAdded = () => {
+    utils.user.list.invalidate();
+  };
+
+  const handleUtilisateurUpdated = () => {
+    utils.user.list.invalidate();
+  };
+
+  const handleUtilisateurDeleted = () => {
+    utils.user.list.invalidate();
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 bg-gray-900 min-h-screen flex items-center justify-center">
+        <Loading size="lg" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 bg-gray-900 min-h-screen">
+        <div className="text-red-400 text-center">
+          Erreur lors du chargement des utilisateurs: {error.message}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -33,10 +62,7 @@ export default function UtilisateursSection() {
           <div className="text-gray-400 text-xs mb-1">Utilisateurs • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des utilisateurs</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddUtilisateurModal onUtilisateurAdded={handleUtilisateurAdded} />
       </div>
 
       {/* Search Bar */}
@@ -46,6 +72,8 @@ export default function UtilisateursSection() {
           <input
             type="text"
             placeholder="Recherche..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-gray-200 placeholder-gray-400 text-sm"
           />
         </div>
@@ -66,36 +94,52 @@ export default function UtilisateursSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {utilisateurs.map((u, index) => (
+              {filteredUtilisateurs.map((utilisateur, index) => (
                 <tr
-                  key={u.id}
+                  key={utilisateur.id}
                   className={`hover:bg-gray-750 transition-colors duration-150 ${
                     index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
                   }`}
                 >
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {u.id}
+                      {utilisateur.id.slice(0, 2)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-white">{u.nom}</span>
+                    <span className="text-sm font-medium text-white">{utilisateur.nom}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-gray-300">{u.email}</span>
+                    <span className="text-sm text-gray-300">{utilisateur.email}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{u.role}</span>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      utilisateur.role === 'ADMIN' ? 'bg-red-900 text-red-300' :
+                      utilisateur.role === 'GESTIONNAIRE' ? 'bg-blue-900 text-blue-300' :
+                      'bg-green-900 text-green-300'
+                    }`}>
+                      {utilisateur.role || 'CLIENT'}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{u.createdAt}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(utilisateur.createdAt).toLocaleDateString('fr-FR')}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <button 
+                        className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        title="Éditer"
+                        onClick={() => setEditingUtilisateurId(utilisateur.id)}
+                      >
                         <FaEdit className="text-xs" />
                       </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
+                      <button 
+                        className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                        title="Supprimer"
+                        onClick={() => setDeletingUtilisateurId(utilisateur.id)}
+                      >
                         <FaTrash className="text-xs" />
                       </button>
                     </div>
@@ -110,7 +154,7 @@ export default function UtilisateursSection() {
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {utilisateurs.length} utilisateur{utilisateurs.length > 1 ? "s" : ""} au total
+          {filteredUtilisateurs.length} utilisateur{filteredUtilisateurs.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -118,6 +162,26 @@ export default function UtilisateursSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal d'édition */}
+      {editingUtilisateurId && (
+        <EditUtilisateurModal
+          utilisateurId={editingUtilisateurId}
+          open={!!editingUtilisateurId}
+          onOpenChange={(open) => !open && setEditingUtilisateurId(null)}
+          onUtilisateurUpdated={handleUtilisateurUpdated}
+        />
+      )}
+
+      {/* Modal de suppression */}
+      {deletingUtilisateurId && (
+        <DeleteUtilisateurModal
+          utilisateurId={deletingUtilisateurId}
+          open={!!deletingUtilisateurId}
+          onOpenChange={(open) => !open && setDeletingUtilisateurId(null)}
+          onUtilisateurDeleted={handleUtilisateurDeleted}
+        />
+      )}
     </div>
   );
 } 

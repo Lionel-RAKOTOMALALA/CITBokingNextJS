@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
-import Topbar from "./Topbar";
-import GlobalLoader from "@/components/GlobalLoader";
 import ClientShell from "./ClientShell";
 
 export const metadata: Metadata = {
@@ -17,16 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
-      <TRPCProvider>
-        <html lang="fr">
-          <body className="font-sans antialiased bg-slate-900">
-            <ClientShell>
-              {children}
-            </ClientShell>
-          </body>
-        </html>
-      </TRPCProvider>
-    </ClerkProvider>
+    <html lang="fr">
+      <body className="font-sans antialiased bg-slate-900" suppressHydrationWarning>
+        <ClerkProvider>
+          <TRPCProvider>
+            {children}
+          </TRPCProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

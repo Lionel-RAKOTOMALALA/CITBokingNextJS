@@ -1,31 +1,34 @@
+"use client";
+
 import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import Image from "next/image";
-
-const photos = [
-  {
-    id: 1,
-    url: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-    hebergement: "Hôtel du Parc",
-    description: "Façade de l'hôtel au printemps.",
-    dateAjout: "2024-07-01",
-  },
-  {
-    id: 2,
-    url: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-    hebergement: "Auberge de la Plage",
-    description: "Vue sur la plage depuis la terrasse.",
-    dateAjout: "2024-06-15",
-  },
-  {
-    id: 3,
-    url: "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d",
-    hebergement: "Chalet Montagne",
-    description: "Chalet sous la neige.",
-    dateAjout: "2024-05-20",
-  },
-];
+import { trpc } from "@/trpc/client";
+import Link from "next/link";
+import { useState } from "react";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import AddPhotoModal from "@/components/photos/AddPhotoModal";
+import EditPhotoModal from "@/components/photos/EditPhotoModal";
 
 export default function PhotosSection() {
+  const { data: photos, isLoading, error, refetch } = trpc.photo.list.useQuery();
+  const deletePhoto = trpc.photo.delete.useMutation();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteError(null);
+    try {
+      await deletePhoto.mutateAsync({ id: deleteId });
+      setDeleteId(null);
+      setConfirmOpen(false);
+      refetch();
+    } catch (e: any) {
+      setDeleteError(e?.message || "Erreur lors de la suppression.");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -34,10 +37,7 @@ export default function PhotosSection() {
           <div className="text-gray-400 text-xs mb-1">Photos • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des photos</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddPhotoModal onPhotoAdded={refetch} />
       </div>
 
       {/* Search Bar */}
@@ -61,58 +61,62 @@ export default function PhotosSection() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Id</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Image</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Hébergement</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Description</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Ajoutée le</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {photos.map((p, index) => (
-                <tr
-                  key={p.id}
-                  className={`hover:bg-gray-750 transition-colors duration-150 ${
-                    index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {p.id}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="w-16 h-10 rounded overflow-hidden border border-gray-600">
-                      <Image
-                        src={p.url || "/placeholder.svg"}
-                        alt={p.description}
-                        width={48}
-                        height={32}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-gray-300">{p.hebergement}</span>
-                  </td>
-                  <td className="px-4 py-3 max-w-xs">
-                    <p className="text-xs text-gray-400 truncate" title={p.description}>
-                      {p.description}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{p.dateAjout}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaEdit className="text-xs" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaTrash className="text-xs" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {isLoading ? (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400">Chargement...</td></tr>
+              ) : error ? (
+                <tr><td colSpan={5} className="text-center py-8 text-red-500">Erreur lors du chargement</td></tr>
+              ) : photos && photos.length > 0 ? (
+                photos.map((p: any, index: number) => (
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-gray-750 transition-colors duration-150 ${
+                      index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
+                        {p.id.slice(0, 4)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="w-16 h-10 rounded overflow-hidden border border-gray-600">
+                        <Image
+                          src={p.url || "/placeholder.svg"}
+                          alt={p.hebergement?.nom || "Photo"}
+                          width={48}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-300">{p.hebergement?.nom || "-"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-400">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <EditPhotoModal photo={p} onPhotoUpdated={refetch} />
+                        <button
+                          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                          onClick={() => { setDeleteId(p.id); setConfirmOpen(true); }}
+                          title="Supprimer"
+                        >
+                          <FaTrash className="text-xs" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400">Aucune photo trouvée</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -121,7 +125,7 @@ export default function PhotosSection() {
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {photos.length} photo{photos.length > 1 ? "s" : ""} au total
+          {photos ? photos.length : 0} photo{photos && photos.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -129,6 +133,17 @@ export default function PhotosSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmDeleteModal
+        open={confirmOpen}
+        onOpenChange={(open) => { setConfirmOpen(open); if (!open) setDeleteId(null); }}
+        onDelete={handleDelete}
+        title="Confirmer la suppression"
+        message="Voulez-vous vraiment supprimer cette photo ? Cette action est irréversible."
+        isLoading={deletePhoto.isPending}
+        errorMsg={deleteError}
+      />
     </div>
   );
 } 

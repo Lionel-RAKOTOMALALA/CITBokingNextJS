@@ -1,30 +1,31 @@
-import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
-
-const videos = [
-  {
-    id: 1,
-    titre: "Présentation Hôtel du Parc",
-    url: "https://www.youtube.com/watch?v=xxxx1",
-    hebergement: "Hôtel du Parc",
-    dateAjout: "2024-07-01",
-  },
-  {
-    id: 2,
-    titre: "Visite Auberge de la Plage",
-    url: "https://www.youtube.com/watch?v=xxxx2",
-    hebergement: "Auberge de la Plage",
-    dateAjout: "2024-06-15",
-  },
-  {
-    id: 3,
-    titre: "Chalet Montagne en hiver",
-    url: "https://www.youtube.com/watch?v=xxxx3",
-    hebergement: "Chalet Montagne",
-    dateAjout: "2024-05-20",
-  },
-];
+"use client";
+import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
+import AddVideoPriveeModal from "@/components/videosprivees/AddVideoPriveeModal";
+import EditVideoPriveeModal from "@/components/videosprivees/EditVideoPriveeModal";
+import { trpc } from "@/trpc/client";
+import { useState } from "react";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
 
 export default function VideosPriveesSection() {
+  const { data: videos, isLoading, error, refetch } = trpc.videoPrivee.list.useQuery();
+  const deleteVideo = trpc.videoPrivee.delete.useMutation();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setDeleteError(null);
+    try {
+      await deleteVideo.mutateAsync({ id: deleteId });
+      setDeleteId(null);
+      setConfirmOpen(false);
+      refetch();
+    } catch (e: any) {
+      setDeleteError(e?.message || "Erreur lors de la suppression.");
+    }
+  };
+
   return (
     <div className="p-6 bg-gray-900 min-h-screen">
       {/* Header */}
@@ -33,10 +34,7 @@ export default function VideosPriveesSection() {
           <div className="text-gray-400 text-xs mb-1">Vidéos privées • Listes</div>
           <h1 className="text-xl font-semibold text-white">Liste des vidéos privées</h1>
         </div>
-        <button className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
-          <FaPlus className="text-xs" />
-          Ajouter
-        </button>
+        <AddVideoPriveeModal onVideoAdded={refetch} />
       </div>
 
       {/* Search Bar */}
@@ -57,51 +55,61 @@ export default function VideosPriveesSection() {
           <table className="min-w-full">
             <thead>
               <tr className="bg-gradient-to-r from-gray-700 to-gray-750 border-b border-gray-600">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Id</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">ID</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Titre</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">URL</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Hébergement</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Privée</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Ajoutée le</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-gray-300 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {videos.map((v, index) => (
-                <tr
-                  key={v.id}
-                  className={`hover:bg-gray-750 transition-colors duration-150 ${
-                    index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
-                  }`}
-                >
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
-                      {v.id}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-white">{v.titre}</span>
-                  </td>
-                  <td className="px-4 py-3 max-w-xs">
-                    <a href={v.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 underline truncate" title={v.url}>{v.url}</a>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-gray-300">{v.hebergement}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{v.dateAjout}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-orange-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaEdit className="text-xs" />
-                      </button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150">
-                        <FaTrash className="text-xs" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {isLoading ? (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Chargement...</td></tr>
+              ) : error ? (
+                <tr><td colSpan={6} className="text-center py-8 text-red-500">Erreur lors du chargement</td></tr>
+              ) : videos && videos.length > 0 ? (
+                videos.map((v: any, index: number) => (
+                  <tr
+                    key={v.id}
+                    className={`hover:bg-gray-750 transition-colors duration-150 ${
+                      index % 2 === 0 ? "bg-gray-800" : "bg-gray-825"
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 bg-orange-900 text-orange-300 rounded-full text-xs font-medium">
+                        {v.id.slice(0, 4)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-white">{v.titre}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-300">{v.hebergement?.nom || "-"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-400">{v.privee ? "Oui" : "Non"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs text-gray-400">{v.createdAt ? new Date(v.createdAt).toLocaleDateString() : "-"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
+                        <EditVideoPriveeModal video={v} onVideoUpdated={refetch} />
+                        <button
+                          className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-700 rounded transition-all duration-150"
+                          onClick={() => { setDeleteId(v.id); setConfirmOpen(true); }}
+                          title="Supprimer"
+                        >
+                          <FaTrash className="text-xs" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">Aucune vidéo trouvée</td></tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -110,7 +118,7 @@ export default function VideosPriveesSection() {
       {/* Footer avec pagination compacte */}
       <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
         <span>
-          {videos.length} vidéo{videos.length > 1 ? "s" : ""} privée{videos.length > 1 ? "s" : ""} au total
+          {videos ? videos.length : 0} vidéo{videos && videos.length > 1 ? "s" : ""} au total
         </span>
         <div className="flex gap-1">
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">‹</button>
@@ -118,6 +126,17 @@ export default function VideosPriveesSection() {
           <button className="px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 transition-colors">›</button>
         </div>
       </div>
+
+      {/* Modal de confirmation de suppression */}
+      <ConfirmDeleteModal
+        open={confirmOpen}
+        onOpenChange={(open) => { setConfirmOpen(open); if (!open) setDeleteId(null); }}
+        onDelete={handleDelete}
+        title="Confirmer la suppression"
+        message="Voulez-vous vraiment supprimer cette vidéo ? Cette action est irréversible."
+        isLoading={deleteVideo.isPending}
+        errorMsg={deleteError}
+      />
     </div>
   );
 } 
